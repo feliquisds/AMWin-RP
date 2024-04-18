@@ -52,8 +52,8 @@ namespace AMWin_RichPresence {
 
         protected bool IsTimeToScrobble(AppleMusicInfo info) {
             if (info.SongDuration.HasValue && info.SongDuration.Value >= 30) { // we should only scrobble tracks with more than 30 seconds
-                double halfSongDuration = info.SongDuration.Value / 2;
-                return elapsedSeconds >= halfSongDuration || elapsedSeconds >= 240; // half the song has passed or more than 4 minutes
+                double minSongDuration = info.SongDuration.Value * 0.3;
+                return elapsedSeconds >= minSongDuration || elapsedSeconds >= 30; // first 30% or 30 seconds of the song has passed
             }
             return elapsedSeconds > Constants.LastFMTimeBeforeScrobbling;
         }
@@ -114,6 +114,9 @@ namespace AMWin_RichPresence {
                         await ScrobbleSong(artist, album, info.SongName);
                         hasScrobbled = true;
                     }
+
+                    await UpdateNowPlaying(artist, album, info.SongName);
+                    logger?.Log($"[{serviceName} scrobbler] Updated now playing: {lastSongID}");
 
                     lastSongProgress = info.CurrentTime ?? 0.0;
                 }
