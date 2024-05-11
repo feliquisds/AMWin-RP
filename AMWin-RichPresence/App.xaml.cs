@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Security.Policy;
@@ -60,10 +61,16 @@ namespace AMWin_RichPresence {
                 }
                 AMWin_RichPresence.Properties.Settings.Default.Save();
             }
+            logger?.Log($"Using region {AMWin_RichPresence.Properties.Settings.Default.AppleMusicRegion}");
 
             // check for updates
             if (AMWin_RichPresence.Properties.Settings.Default.CheckForUpdatesOnStartup) {
-                CheckForUpdates();
+                try {
+                    CheckForUpdates();
+                    logger?.Log("No AMWin-RP updates available.");
+                } catch (Exception e) {
+                    logger?.Log($"Could not check for AMWin-RP updates: {e.Message}");
+                }
             }
 
             // start Discord RPC
@@ -87,7 +94,7 @@ namespace AMWin_RichPresence {
                 logger?.Log("No Last.FM API key found");
             }
 
-            amScraper = new(lastFMApiKey, Constants.RefreshPeriod, classicalComposerAsArtist, (newInfo) => {
+            amScraper = new(lastFMApiKey, Constants.RefreshPeriod, classicalComposerAsArtist, AMWin_RichPresence.Properties.Settings.Default.AppleMusicRegion, (newInfo) => {
 
                 // don't update scraper if Apple Music is paused or not open
                 if (newInfo != null && (AMWin_RichPresence.Properties.Settings.Default.ShowRPWhenMusicPaused || !newInfo.IsPaused)) {
@@ -136,6 +143,12 @@ namespace AMWin_RichPresence {
 
         internal async Task<bool> UpdateListenBrainzCreds() {
             return await listenBrainzScrobblerClient.UpdateCredsAsync(listenBrainzCredentials);
+        }
+
+        internal void UpdateRegion() {
+            var region = AMWin_RichPresence.Properties.Settings.Default.AppleMusicRegion;
+            logger?.Log($"Changed region to {region}");
+            amScraper.ChangeRegion(region);
         }
 
         internal void UpdateScraperPreferences(bool composerAsArtist) {
